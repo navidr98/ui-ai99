@@ -1,5 +1,6 @@
 import random
 from base import BaseAgent, TurnData, Action
+from base import read_utf, write_utf
 
 
 class State:
@@ -24,15 +25,21 @@ class Node:
         pass
 
 
+
 class Agent(BaseAgent):
 
     def __init__(self):
         BaseAgent.__init__(self)
+        self.start_state = None
+        self.diamond_state = None
+        self.is_first_turn = False
+        self.solution_list = []
         print(f"MY NAME: {self.name}")
         print(f"PLAYER COUNT: {self.agent_count}")
         print(f"GRID SIZE: {self.grid_size}")
         print(f"MAX TURNS: {self.max_turns}")
         print(f"DECISION TIME LIMIT: {self.decision_time_limit}")
+
 
     def do_turn(self, turn_data: TurnData) -> Action:
         print(f"TURN {self.max_turns - turn_data.turns_left}/{self.max_turns}")
@@ -43,19 +50,41 @@ class Agent(BaseAgent):
             print(f"COLLECTED: {agent.collected}")
         for row in turn_data.map:
             print(''.join(row))
-        action_name = input("> ").upper()
-        if action_name == "U":
-            return Action.UP
-        if action_name == "D":
-            return Action.DOWN
-        if action_name == "L":
-            return Action.LEFT
-        if action_name == "R":
-            return Action.RIGHT
-        return random.choice(list(Action))
 
-    def breadth_first_search(self):
-        pass
+        action = self.breadth_first_search(turn_data)
+        # returning agent action by calling breadth_first_search(turnData) 
+
+        # temporary
+        return Action.DOWN
+
+    def transform_turnData_to_state(self, turn_data: TurnData) -> State:
+        """
+        ransforms turn_data to state
+        """
+        return None
+
+    def breadth_first_search(self, turn_data: TurnData):
+        """performs breadth first search on problem"""
+        current_state = self.transform_turnData_to_state(turn_data)
+        frontier = []
+        explored_set = {}
+
+        if self.is_first_turn:
+            self.start_state = current_state
+        elif current_state == self.start_state:
+            # first creating relative goal state
+            # do searching diamond state
+            # creating solution_list actions
+            pass
+        elif current_state == self.diamond_state:
+            # first creating relative final goal state
+            # do searching for final goal
+            # creating solution_list actions
+            pass
+        else:
+            # simply returning an action from solution_list
+            pass
+        
 
     def pop(self):
         pass
@@ -63,8 +92,15 @@ class Agent(BaseAgent):
     def insert(self):
         pass
 
-    def goal_test(self, child_state: State):
+    def goal_test(self, child_state: State, goal_state: State):
         pass
+
+    def actions(self, state: State):
+        pass
+
+    
+
+
 
 
 if __name__ == '__main__':
