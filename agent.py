@@ -8,6 +8,7 @@ class State:
         self.carrying = None
         self.turns_left = None
         self.position = ()
+        self.collected_list = []
 
 
 class Node:
@@ -56,7 +57,7 @@ class Agent(BaseAgent):
         # returning agent action by calling breadth_first_search(turnData) 
 
         # temporary
-        return Action.DOWN
+        return Action.RIGHT
 
 
     def breadth_first_search(self, turn_data: TurnData) -> Action:
@@ -64,7 +65,7 @@ class Agent(BaseAgent):
         current_state = self.transform_turnData_to_state(turn_data)
         x = self.actions(current_state)
         print(x)
-        return None  ##################################################3
+        return None ##################################################3
         frontier = []
         explored_set = {}
 
@@ -96,6 +97,8 @@ class Agent(BaseAgent):
             if item.name == self.name:
                 state.carrying = item.carrying
                 state.position = item.position
+                state.collected_list = item.collected
+
         state.map_data = turn_data.map
 
         return state
@@ -133,13 +136,14 @@ class Agent(BaseAgent):
                 possible_actions.append(Action.LEFT)
 
         right_position = y + 1
-        if up_position != columns :  # right is not boundary
+        if right_position != columns :  # right is not boundary
             if state.map_data[x][right_position] != '*':  # there is no wall rightside
                 possible_actions.append(Action.RIGHT)
 
         return possible_actions
     
-
+    def child_node(self, state: State, action: Action, parent_cost: int) -> Node:
+        
 
 
 
