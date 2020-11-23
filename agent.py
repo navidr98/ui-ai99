@@ -1,4 +1,5 @@
 import random
+import copy
 from base import BaseAgent, TurnData, Action
 
 
@@ -6,7 +7,7 @@ class State:
     def __init__(self):
         self.map_data = []
         self.carrying = None
-        self.position = ()
+        self.position = [None, None]
         self.collected_list = []
     
     def __eq__(self, other_state):
@@ -14,10 +15,12 @@ class State:
             return False
         elif other_state.carrying != self.carrying:
             return False
-        elif other_state.position != self.position:
+        elif other_state.position[0] != self.position[0]:
             return False
-        elif other_state.collected_list != self.collected_list:
+        elif other_state.position[1] != self.position[1]:
             return False
+        # elif other_state.collected_list != self.collected_list:
+        #     return False
         
         return True
 
@@ -28,13 +31,20 @@ class Node:
         self.parent_action = action
         self.cost = 0
 
-        if init_state == None:
+        if init_state:
+            self.state = init_state
+        else:
             self.state = State()
             self.deduce_state()
-        else:
-            self.state = init_state
 
     def deduce_state(self):
+        ###############
+        print("parent_map")
+        for row in self.parent.state.map_data:
+            for column in row:
+                print(column, end='')
+            print()
+        ###############
         self.cost = self.parent.cost + 1
         """deduces the state that caused by parent_action"""
 
@@ -54,38 +64,38 @@ class Node:
         symbol_in_map = self.parent.state.map_data[self.state.position[0]][self.state.position[1]]
         # set map of next state
         if symbol_in_map == '.':  # empty 
-            self.state.map_data = self.parent.state.map_data[:]
+            self.state.map_data = copy.deepcopy(self.parent.state.map_data)
             self.state.carrying = self.parent.state.carrying
-            self.state.collected_list = self.parent.state.collected_list[:]
+            self.state.collected_list = copy.deepcopy(self.parent.state.collected_list)
         elif symbol_in_map == 'a':  # agent's base
-            self.state.map_data = self.parent.state.map_data[:]
+            self.state.map_data = copy.deepcopy(self.parent.state.map_data)
             if self.parent.state.carrying != None:  # agent is carrying a diamond
                 self.state.collected_list.append(self.parent.state.carrying)
                 self.state.carrying = None
             else:  # agent is not carrying a diamond
-                self.state.collected_list = self.parent.state.collected_list[:]
+                self.state.collected_list = copy.deepcopy(self.parent.state.collected_list)
                 self.state.carrying = None
         elif int(symbol_in_map) >= 0:  # some diamond
             if self.parent.state.carrying != None:  # agent is carrying a diamond
-                self.state.map_data = self.parent.state.map_data[:]
+                self.state.map_data = copy.deepcopy(self.parent.state.map_data)
                 self.state.carrying = self.parent.state.carrying
-                self.state.collected_list = self.parent.state.collected_list[:]
+                self.state.collected_list = copy.deepcopy(self.parent.state.collected_list)
             else:  # agent is not carrying diamond
-                self.state.map_data = self.parent.state.map_data[:]
+                self.state.map_data = copy.deepcopy(self.parent.state.map_data)
                 self.state.carrying = int(symbol_in_map)
                 self.state.map_data[self.state.position[0]][self.state.position[1]] = '.'
-                self.state.collected_list = self.parent.state.collected_list[:]
+                self.state.collected_list = copy.deepcopy(self.parent.state.collected_list)
 
-    def __eq__(self, other_node):
-        if other_node.parent != self.parent:
-            return False
-        elif other_node.parent_action != self.parent:
-            return False
-        elif other_node.state != self.state:
-            return False
-        elif other_node.cost != self.cost:
-            return False
-        return True
+    # def __eq__(self, other_node):
+    #     if other_node.parent != self.parent:
+    #         return False
+    #     elif other_node.parent_action != self.parent_action:
+    #         return False
+    #     elif other_node.state != self.state:
+    #         return False
+    #     elif other_node.cost != self.cost:
+    #         return False
+    #     return True
 
 class Agent(BaseAgent):
 
@@ -114,11 +124,15 @@ class Agent(BaseAgent):
         for row in turn_data.map:
             print(''.join(row))
 
-        action = self.breadth_first_search(turn_data)
         # returning agent action by calling breadth_first_search(turnData) 
+        action = self.breadth_first_search(turn_data)
+        if action == -1:  # failure
+            pass
+        else:
+            return action
 
-        # temporary
-        return random.choice(action)
+        # # temporary
+        # return random.choice(action)#################
 
 
     def breadth_first_search(self, turn_data: TurnData) -> Action:
@@ -139,65 +153,81 @@ class Agent(BaseAgent):
         # return possible_actions ##################################################3
         frontier = []
         explored_set = []
+        explored_set_nodes = []###############3
 
         if self.is_first_turn:
+            self.is_first_turn = False
             self.start_node = Node(init_state=current_state)
             frontier.append(self.start_node)
+
             # calculating diamond_goal_state and first_goal_state
             self.calculating_first_goal_state()
 
-            self.is_first_turn = False
+
+
 
             while True:
                 if not frontier:  # list is empty
                     return -1
                 node = frontier.pop(0)  # chooses the shallowest node in frontier
                 explored_set.append(node.state)
+                explored_set_nodes.append(node) ########################33
 
                 for action in self.actions(node.state):
                     child = self.child_node(node, action)
-                    if (child.state not in explored_set) and (child not in frontier):
-                        if self.goal_test(child.state, True):
-                            # save solution to solution_list
-                            # save first action of the solution list
-                            # update solution list
-                            # return first action
-                            return self.solution(child, )##################################
+                    self.print_node(child)#################
+                    if (child.state not in explored_set):
+                        print("ok in first if")################
+                        print("frontier: ", frontier)#################
+                        print("child: ", child)
+                        child_is_in_frontier = False
+                        for item in frontier:  # check if child exists in frontier
+                            if item.parent != child.parent:
+                                continue
+                            elif item.state != child.state:
+                                continue
+                            elif item.parent_action != child.parent_action:
+                                continue
+                            elif item.cost != child.cost:
+                                continue
+                            else:
+                                child_is_in_frontier = True
 
-                        frontier.append(child)
-                        
+                        if not child_is_in_frontier:  # child is not in frontier
+                            print("this item is not in frontier!")
+                            if self.goal_test(child.state, from_start=True):  # check if child is goal
+                                self.solution(child)
+                                ######################################
+                                with open("first-test", "w") as f:
+                                    f.write(str(self.solution_list))
+                                ######################################
+                                first_action = self.solution_list.pop(len(self.solution_list) - 1)
+                                return first_action
 
-                        
-
-                    
-            # first creating relative goal state
-            # do searching diamond state
-            # creating solution_list actions
-        elif current_state == self.diamond_state:
-            # first creating relative final goal state
-            # do searching for final goal
-            # creating solution_list actions
-            pass
+                            frontier.append(child)
+        # elif current_state == self.diamond_state:
+        #     # first creating relative final goal state
+        #     # do searching for final goal
+        #     # creating solution_list actions
+        #     pass
         else:
-            # simply returning an action from solution_list
-            pass
-    
+            return self.solution_list.pop(len(self.solution_list) - 1)
+
+
     def calculating_first_goal_state(self):
         # finding position of diamond in first state
         diamond_position = ()
-        for row in self.start_node.state.map_data:
-            for column in row:
-                if self.start_node.state.map_data[row][column] not in ('a', '.', '*'):
-                    diamond_position = (row, column)
-        
-        self.first_goal_state.map_data = self.start_node.state.map_data[:]
+        for row_index, row in enumerate(self.start_node.state.map_data):
+            for column_index, _ in enumerate(row):
+                if self.start_node.state.map_data[row_index][column_index] not in ('a', '.', '*'):
+                    diamond_position = (row_index, column_index)
+
+        self.first_goal_state.map_data = copy.deepcopy(self.start_node.state.map_data)
         self.first_goal_state.carrying = int(self.first_goal_state.map_data[diamond_position[0]][diamond_position[1]])
         self.first_goal_state.map_data[diamond_position[0]][diamond_position[1]] = '.'
         self.first_goal_state.collected_list = None
         self.first_goal_state.position = diamond_position
-
-
-
+        
     def transform_turnData_to_state(self, turn_data: TurnData) -> State:
         """
         ransforms turn_data to state
@@ -207,7 +237,8 @@ class Agent(BaseAgent):
         for item in turn_data.agent_data:
             if item.name == self.name:
                 state.carrying = item.carrying
-                state.position = item.position
+                state.position[0] = item.position[0]
+                state.position[1] = item.position[1]
                 state.collected_list = item.collected
 
         state.map_data = turn_data.map
@@ -216,6 +247,11 @@ class Agent(BaseAgent):
 
     def goal_test(self, child_state: State, from_start: bool):
         if from_start:
+            print("checking in goal test--")
+            print("child state: ")
+            self.print_state(child_state)
+            print("goal state: ")
+            self.print_state(self.first_goal_state)
             if child_state == self.first_goal_state:
                 return True
             else:
@@ -260,11 +296,35 @@ class Agent(BaseAgent):
         return child_node
 
     def solution(self, child: Node):
-        return None
-        
+        while True:
+            if child.parent_action != None:
+                self.solution_list.append(child.parent_action)
+                child = child.parent
+            else:
+                return
 
+    def print_map(self, inp):
+        for row in inp:
+            for column in row:
+                print(column, end='')
+            print()
 
-        
+    def print_node(self, node: Node):
+        print("\nprinting node: ", node)
+        print("parent node: ", node.parent)
+        print("parent action: ", node.parent_action)
+        print("map: ")
+        self.print_map(node.state.map_data)
+        print(node.state.position)
+        print(node.state.carrying)
+        print(node.state.collected_list)
+
+    def print_state(self, state: State):
+        print("print state: ")
+        self.print_map(state.map_data)
+        print(state.position)
+        print(state.carrying)
+        print(state.collected_list)
 
 
 
