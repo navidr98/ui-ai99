@@ -143,8 +143,8 @@ class Agent(BaseAgent):
         if self.is_first_turn:
             self.start_node = Node(init_state=current_state)
             frontier.append(self.start_node)
-            # deducing diamond_goal_state and first_goal_state
-            
+            # calculating diamond_goal_state and first_goal_state
+            self.calculating_first_goal_state()
 
             self.is_first_turn = False
 
@@ -191,9 +191,10 @@ class Agent(BaseAgent):
                     diamond_position = (row, column)
         
         self.first_goal_state.map_data = self.start_node.state.map_data[:]
+        self.first_goal_state.carrying = int(self.first_goal_state.map_data[diamond_position[0]][diamond_position[1]])
         self.first_goal_state.map_data[diamond_position[0]][diamond_position[1]] = '.'
-        self.first_goal_state.carrying = int(self.start_node.state.map_data[diamond_position[0]][diamond_position[1]])
         self.first_goal_state.collected_list = None
+        self.first_goal_state.position = diamond_position
 
 
 
@@ -215,7 +216,10 @@ class Agent(BaseAgent):
 
     def goal_test(self, child_state: State, from_start: bool):
         if from_start:
-            pass
+            if child_state == self.first_goal_state:
+                return True
+            else:
+                return False
         else:
             pass
         return None
