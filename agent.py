@@ -38,13 +38,6 @@ class Node:
             self.deduce_state()
 
     def deduce_state(self):
-        ###############
-        print("parent_map")
-        for row in self.parent.state.map_data:
-            for column in row:
-                print(column, end='')
-            print()
-        ###############
         self.cost = self.parent.cost + 1
         """deduces the state that caused by parent_action"""
 
@@ -138,22 +131,8 @@ class Agent(BaseAgent):
     def breadth_first_search(self, turn_data: TurnData) -> Action:
         """performs breadth first search on problem"""
         current_state = self.transform_turnData_to_state(turn_data)
-       
-        # possible_actions = self.actions(current_state) ##########################
-        # for action in possible_actions:##############################3
-        #     child = self.child_node(parent=self.start_node, action=action)#####################
-        #     with open("test-child-node", "a") as f:
-        #         f.write("\n\n###############################")
-        #         f.write("\nmap: " + str(child.state.map_data))
-        #         f.write("\ncarrying: " +  str(child.state.carrying))
-        #         f.write("\ncollected_list: " +  str(child.state.collected_list))
-        #         f.write("\npostion: " + str(child.state.position))
-        #         f.write("\ncost: " + str(child.cost))
-        #         f.write("################################")
-        # return possible_actions ##################################################3
         frontier = []
         explored_set = []
-        explored_set_nodes = []###############3
 
         if self.is_first_turn:
             self.is_first_turn = False
@@ -163,23 +142,15 @@ class Agent(BaseAgent):
             # calculating diamond_goal_state and first_goal_state
             self.calculating_first_goal_state()
 
-
-
-
             while True:
                 if not frontier:  # list is empty
                     return -1
                 node = frontier.pop(0)  # chooses the shallowest node in frontier
                 explored_set.append(node.state)
-                explored_set_nodes.append(node) ########################33
 
                 for action in self.actions(node.state):
                     child = self.child_node(node, action)
-                    self.print_node(child)#################
                     if (child.state not in explored_set):
-                        print("ok in first if")################
-                        print("frontier: ", frontier)#################
-                        print("child: ", child)
                         child_is_in_frontier = False
                         for item in frontier:  # check if child exists in frontier
                             if item.parent != child.parent:
@@ -194,25 +165,53 @@ class Agent(BaseAgent):
                                 child_is_in_frontier = True
 
                         if not child_is_in_frontier:  # child is not in frontier
-                            print("this item is not in frontier!")
                             if self.goal_test(child.state, from_start=True):  # check if child is goal
+                                self.diamond_state = child.state
                                 self.solution(child)
-                                ######################################
-                                with open("first-test", "w") as f:
-                                    f.write(str(self.solution_list))
-                                ######################################
                                 first_action = self.solution_list.pop(len(self.solution_list) - 1)
                                 return first_action
 
                             frontier.append(child)
-        # elif current_state == self.diamond_state:
-        #     # first creating relative final goal state
-        #     # do searching for final goal
-        #     # creating solution_list actions
-        #     pass
+        elif current_state == self.diamond_state:
+            self.calculating_diamond_goal_state()
+            frontier.append(Node(init_state=current_state))
+            while True:
+                if not frontier:  # list is empty
+                    return -1
+                node = frontier.pop(0)  # chooses the shallowest node in frontier
+                explored_set.append(node.state)
+
+                for action in self.actions(node.state):
+                    child = self.child_node(node, action)
+                    if (child.state not in explored_set):
+                        child_is_in_frontier = False
+                        for item in frontier:  # check if child exists in frontier
+                            if item.parent != child.parent:
+                                continue
+                            elif item.state != child.state:
+                                continue
+                            elif item.parent_action != child.parent_action:
+                                continue
+                            elif item.cost != child.cost:
+                                continue
+                            else:
+                                child_is_in_frontier = True
+
+                        if not child_is_in_frontier:  # child is not in frontier
+                            if self.goal_test(child.state, from_start=False):  # check if child is goal
+                                self.solution(child)
+                                first_action = self.solution_list.pop(len(self.solution_list) - 1)
+                                return first_action
+
+                            frontier.append(child)
+            pass
         else:
             return self.solution_list.pop(len(self.solution_list) - 1)
 
+    def calculating_diamond_goal_state(self):
+        self.diamond_goal_state.map_data = copy.deepcopy(self.diamond_state.map_data)
+        self.diamond_goal_state.carrying = None
+        self.diamond_goal_state.collected_list.append(self.diamond_state.carrying)
 
     def calculating_first_goal_state(self):
         # finding position of diamond in first state
@@ -247,18 +246,18 @@ class Agent(BaseAgent):
 
     def goal_test(self, child_state: State, from_start: bool):
         if from_start:
-            print("checking in goal test--")
-            print("child state: ")
-            self.print_state(child_state)
-            print("goal state: ")
-            self.print_state(self.first_goal_state)
             if child_state == self.first_goal_state:
                 return True
             else:
                 return False
-        else:
-            pass
-        return None
+        else:  # check if child_state is equal to diamond_goal_state
+            if child_state.collected_list != self.diamond_goal_state.collected_list:
+                return False
+            elif child_state.carrying != None:
+                return False
+            elif child_state.map_data != self.diamond_goal_state.map_data:
+                return False
+            return True
 
     def actions(self, state: State) -> list:
         """returns list of possible actions"""
@@ -320,7 +319,6 @@ class Agent(BaseAgent):
         print(node.state.collected_list)
 
     def print_state(self, state: State):
-        print("print state: ")
         self.print_map(state.map_data)
         print(state.position)
         print(state.carrying)
