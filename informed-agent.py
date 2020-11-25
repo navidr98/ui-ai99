@@ -92,7 +92,7 @@ class Agent(BaseAgent):
         current_state = self.transform_turnData_to_state(turn_data)
 
         if not self.solution_list:  # solution list is empty
-            if not current_state.carrying:  # in current state, agent is not carrying a diamand
+            if  type(current_state.carrying) == type(None):  # in current state, agent is not carrying a diamand
                 self.is_carrying_diamond = False
             else:  # in current state, agent is carrying a diamond
                 self.is_carrying_diamond = True
@@ -110,19 +110,13 @@ class Agent(BaseAgent):
                         return -1
                     node = heapq.heappop(frontier)
 
-                    print("\nnode.state:")
-                    self.print_state(node.state)
-                    print("\nself.goal_state:")
-                    self.print_state(self.goal_state)
                     if node.state == self.goal_state:  # found a solution
                         self.solution(node)
                         first_action = self.solution_list.pop(len(self.solution_list) - 1)
-                        print("first action", str(first_action))
                         return first_action
                     
                     explored_set.append(node.state)
                     for action in self.actions(node.state):
-                        print(str(action), end=' ')#################################
                         child = self.child_node(node, action)
                         child_is_in_frontier = False
                         for frontier_index, frontier_node in enumerate(frontier):
@@ -135,8 +129,33 @@ class Agent(BaseAgent):
                             heapq.heappush(frontier, child)
             else:  # agent is carrying a diamond
                 # executing algorithm to find solution to seek agent's base
-                pass
+                print("agent is carrying a diamond!")#################################
+                self.find_goal_state(current_state.map_data)
+                frontier = [Node(state=current_state, parent_node=None, parent_action=None)]
+                explored_set = []
 
+                while True:
+                    if not frontier:  # frontier is emtpy
+                        return -1
+                    node = heapq.heappop(frontier)
+
+                    if (node.state.map_data == self.goal_state.map_data) and (node.state.collected_list == self.goal_state.collected_list) and (node.state.carrying == self.goal_state.carrying) :  # found a solution
+                        self.solution(node)
+                        first_action = self.solution_list.pop(len(self.solution_list) - 1)
+                        return first_action
+
+                    explored_set.append(node.state)
+                    for action in self.actions(node.state):
+                        child = self.child_node(node, action)
+                        child_is_in_frontier = False
+                        for frontier_index, frontier_node in enumerate(frontier):
+                            if child.state == frontier_node.state:  # check if child.state is in frontier
+                                child_is_in_frontier = True
+                                if child.final_cost < frontier_node.final_cost:  # check if node in frontier has higher cost than child
+                                    frontier[frontier_index] = child
+                        
+                        if not child_is_in_frontier and (child.state not in explored_set):
+                            heapq.heappush(frontier, child)
         else:  # solution_list is not empty
             # returning an action from solution_list
             return self.solution_list.pop(len(self.solution_list) - 1)
@@ -148,7 +167,6 @@ class Agent(BaseAgent):
         for item in turn_data.agent_data:
             if item.name == self.name:
                 state = State(turn_data.map, item.carrying, item.collected)
-                print("in transform_turnData", item.position)
                 state.position[0] = item.position[0]
                 state.position[1] = item.position[1]
                 return state
@@ -158,7 +176,10 @@ class Agent(BaseAgent):
             finds goal state, based on if agent is carrying a diamond
         """
         if self.is_carrying_diamond:  # agent is carrying a diamond, so its goal state is agent with collected diamond
-            pass
+            goal_map = copy.deepcopy(current_state_map)
+            self.goal_state.collected_list.append(self.goal_state.carrying)
+            goal_state_collected_list = copy.deepcopy(self.goal_state.collected_list)
+            self.goal_state = State(goal_map, None, goal_state_collected_list)
         else:  # agent is not carrying a diamond, so its goal state is agent with diamond 
             goal_map = copy.deepcopy(current_state_map)
             for row_index, row in enumerate(goal_map):
