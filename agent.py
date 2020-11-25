@@ -153,13 +153,7 @@ class Agent(BaseAgent):
                     if (child.state not in explored_set):
                         child_is_in_frontier = False
                         for item in frontier:  # check if child exists in frontier
-                            if item.parent != child.parent:
-                                continue
-                            elif item.state != child.state:
-                                continue
-                            elif item.parent_action != child.parent_action:
-                                continue
-                            elif item.cost != child.cost:
+                            if item.state != child.state:
                                 continue
                             else:
                                 child_is_in_frontier = True
