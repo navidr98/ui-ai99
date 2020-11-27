@@ -3,7 +3,7 @@ import random
 import heapq
 from base import BaseAgent, TurnData, Action
 
-class State:  # not tested
+class State:  
     def __init__(self, map_data, carrying: int, collected_list: list):
         self.map_data = copy.deepcopy(map_data)
         self.carrying = carrying
@@ -26,7 +26,7 @@ class State:  # not tested
 
 
 
-class Node:  # not tested
+class Node: 
     def __init__(self, state: State, parent_node, parent_action: Action):
         self.state = state
         self.parent_node = parent_node
@@ -82,7 +82,6 @@ class Agent(BaseAgent):
 
         action = self.a_star_search(turn_data)
         if action == -1:  # failed to find proper action
-            print("random action")############################################
             return random.choice(list(Action))
         else:
             return action
@@ -96,66 +95,36 @@ class Agent(BaseAgent):
                 self.is_carrying_diamond = False
             else:  # in current state, agent is carrying a diamond
                 self.is_carrying_diamond = True
+            
+            # executing algorithm to find solution to seek diamond
 
-            if not self.is_carrying_diamond:  # agent isn't carrying a diamond
-                # executing algorithm to find solution to seek diamond
+            # finding goal state
+            self.find_goal_state(current_state.map_data)
+            frontier = [Node(state=current_state, parent_node=None, parent_action=None)]
+            explored_set = []
 
-                # finding goal state
-                self.find_goal_state(current_state.map_data)
-                frontier = [Node(state=current_state, parent_node=None, parent_action=None)]
-                explored_set = []
+            while True:
+                if not frontier:  # frontier is emtpy
+                    return -1
+                node = heapq.heappop(frontier)
 
-                while True:
-                    if not frontier:  # frontier is emtpy
-                        return -1
-                    node = heapq.heappop(frontier)
-
-                    if node.state == self.goal_state:  # found a solution
-                        self.solution(node)
-                        first_action = self.solution_list.pop(len(self.solution_list) - 1)
-                        return first_action
+                if self.goal_test(node):  # found a solution
+                    self.solution(node)
+                    first_action = self.solution_list.pop(len(self.solution_list) - 1)
+                    return first_action
                     
-                    explored_set.append(node.state)
-                    for action in self.actions(node.state):
-                        child = self.child_node(node, action)
-                        child_is_in_frontier = False
-                        for frontier_index, frontier_node in enumerate(frontier):
-                            if child.state == frontier_node.state:  # check if child.state is in frontier
-                                child_is_in_frontier = True
-                                if child.final_cost < frontier_node.final_cost:  # check if node in frontier has higher cost than child
-                                    frontier[frontier_index] = child
+                explored_set.append(node.state)
+                for action in self.actions(node.state):
+                    child = self.child_node(node, action)
+                    child_is_in_frontier = False
+                    for frontier_index, frontier_node in enumerate(frontier):
+                        if child.state == frontier_node.state:  # check if child.state is in frontier
+                            child_is_in_frontier = True
+                            if child.final_cost < frontier_node.final_cost:  # check if node in frontier has higher cost than child
+                                frontier[frontier_index] = child
                         
-                        if not child_is_in_frontier and (child.state not in explored_set):
-                            heapq.heappush(frontier, child)
-            else:  # agent is carrying a diamond
-                # executing algorithm to find solution to seek agent's base
-                print("agent is carrying a diamond!")#################################
-                self.find_goal_state(current_state.map_data)
-                frontier = [Node(state=current_state, parent_node=None, parent_action=None)]
-                explored_set = []
-
-                while True:
-                    if not frontier:  # frontier is emtpy
-                        return -1
-                    node = heapq.heappop(frontier)
-
-                    if (node.state.map_data == self.goal_state.map_data) and (node.state.collected_list == self.goal_state.collected_list) and (node.state.carrying == self.goal_state.carrying) :  # found a solution
-                        self.solution(node)
-                        first_action = self.solution_list.pop(len(self.solution_list) - 1)
-                        return first_action
-
-                    explored_set.append(node.state)
-                    for action in self.actions(node.state):
-                        child = self.child_node(node, action)
-                        child_is_in_frontier = False
-                        for frontier_index, frontier_node in enumerate(frontier):
-                            if child.state == frontier_node.state:  # check if child.state is in frontier
-                                child_is_in_frontier = True
-                                if child.final_cost < frontier_node.final_cost:  # check if node in frontier has higher cost than child
-                                    frontier[frontier_index] = child
-                        
-                        if not child_is_in_frontier and (child.state not in explored_set):
-                            heapq.heappush(frontier, child)
+                    if not child_is_in_frontier and (child.state not in explored_set):
+                        heapq.heappush(frontier, child)
         else:  # solution_list is not empty
             # returning an action from solution_list
             return self.solution_list.pop(len(self.solution_list) - 1)
@@ -279,28 +248,18 @@ class Agent(BaseAgent):
 
         return Node(child_node_state, node, action)
 
-    def print_map(self, inp):
-        for row in inp:
-            for column in row:
-                print(column, end='')
-            print()
-
-    def print_node(self, node: Node):
-        print("\nprinting node: ", node)
-        print("parent node: ", node.parent)
-        print("parent action: ", node.parent_action)
-        print("map: ")
-        self.print_map(node.state.map_data)
-        print(node.state.position)
-        print(node.state.carrying)
-        print(node.state.collected_list)
-
-    def print_state(self, state: State):
-        self.print_map(state.map_data)
-        print("postion: ", state.position)
-        print("carrying: ", state.carrying)
-        print("collected_list", state.collected_list)
-
+    def goal_test(self, node: Node):
+        if self.is_carrying_diamond:
+            if node.state.map_data == self.goal_state.map_data:
+                if node.state.collected_list == self.goal_state.collected_list:
+                    if node.state.carrying == self.goal_state.carrying :  # found a solution
+                        return True
+        else:
+            if node.state == self.goal_state:
+                return True
+        
+        return False
+    
 
 if __name__ == '__main__':
     winner = Agent().play()
