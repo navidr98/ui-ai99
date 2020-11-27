@@ -1,6 +1,7 @@
 import copy
 import random
 import heapq
+import time
 from base import BaseAgent, TurnData, Action
 
 class State:  
@@ -69,7 +70,6 @@ class Agent(BaseAgent):
         print(f"MAX TURNS: {self.max_turns}")
         print(f"DECISION TIME LIMIT: {self.decision_time_limit}")
 
-
     def do_turn(self, turn_data: TurnData) -> Action:
         print(f"TURN {self.max_turns - turn_data.turns_left}/{self.max_turns}")
         for agent in turn_data.agent_data:
@@ -80,12 +80,12 @@ class Agent(BaseAgent):
         for row in turn_data.map:
             print(''.join(row))
 
-        action = self.a_star_search(turn_data)
+        action = self.a_star_search(turn_data)        
+
         if action == -1:  # failed to find proper action
             return random.choice(list(Action))
         else:
             return action
-
 
     def a_star_search(self, turn_data):
         current_state = self.transform_turnData_to_state(turn_data)
@@ -127,7 +127,7 @@ class Agent(BaseAgent):
                         heapq.heappush(frontier, child)
         else:  # solution_list is not empty
             # returning an action from solution_list
-            return self.solution_list.pop(len(self.solution_list) - 1)
+            return self.solution_list.pop()
     
     def transform_turnData_to_state(self, turn_data: TurnData) -> State:  # not tested
         """
