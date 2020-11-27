@@ -108,7 +108,7 @@ class Agent(BaseAgent):
                             frontier.append(child)    
         else:  # solution_list is not empty
             # returning an action from solution_list
-            return self.solution_list.pop(len(self.solution_list) - 1)        
+            return self.solution_list.pop()        
 
     def find_goal_state(self, current_state_map):
         """
