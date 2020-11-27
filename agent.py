@@ -105,7 +105,7 @@ class Agent(BaseAgent):
                             self.solution(child)
                             first_action = self.solution_list.pop(len(self.solution_list) - 1)
                             return first_action
-                            frontier.append(child)    
+                        frontier.append(child)    
         else:  # solution_list is not empty
             # returning an action from solution_list
             return self.solution_list.pop()        
