@@ -1,6 +1,7 @@
 import copy
 import random
 import heapq
+import time
 from base import BaseAgent, TurnData, Action
 
 class State:  
@@ -63,6 +64,8 @@ class Agent(BaseAgent):
         self.solution_list = []
         self.is_carrying_diamond = False
         self.goal_state = None
+        self.first_node = None
+        self.is_time_out = False
         print(f"MY NAME: {self.name}")
         print(f"PLAYER COUNT: {self.agent_count}")
         print(f"GRID SIZE: {self.grid_size}")
@@ -103,7 +106,9 @@ class Agent(BaseAgent):
             frontier = [Node(state=current_state, parent_node=None, parent_action=None)]
             explored_set = []
 
+            remained_time = self.decision_time_limit  # save current decision_time_limit
             while True:
+                start_measuring_time = time.perf_counter()
                 if not frontier:  # frontier is emtpy
                     return -1
                 node = heapq.heappop(frontier)
@@ -125,8 +130,17 @@ class Agent(BaseAgent):
                         
                     if not child_is_in_frontier and (child.state not in explored_set):
                         heapq.heappush(frontier, child)
+                ###### time checking
+                end_measuring_time = time.perf_counter()
+                remained_time -= end_measuring_time - start_measuring_time
+                if remained_time < 0:
+                    self.is_time_out = True
+                ######
         else:  # solution_list is not empty
             # returning an action from solution_list
+            if self.is_time_out:
+                self.is_time_out = False
+                self.rebuild_solution(current_state)
             return self.solution_list.pop()
     
     def transform_turnData_to_state(self, turn_data: TurnData) -> State:  # not tested
@@ -166,7 +180,21 @@ class Agent(BaseAgent):
                 self.solution_list.append(child.parent_action)
                 child = child.parent_node
             else:  # reached to first node
+                self.first_node = child
                 return
+
+    def rebuild_solution(self, current_state):
+        if self.first_node.state.position[0] - 1 == current_state.position[0]:  # current_state position is upside
+            self.solution_list.append(Action.DOWN)
+        elif self.first_node.state.position[0] + 1 == current_state.position[0]:  # current_state position is downside
+            self.solution_list.append(Action.UP)
+        elif self.first_node.state.position[1] - 1 == current_state.position[1]:  # current_state position is leftside
+            self.solution_list.append(Action.RIGHT)
+        elif self.first_node.state.position[1] +1 == current_state.position[1]:  # current_state position is rightside
+            self.solution_list.append(Action.LEFT)  # current_state position is same as child
+        elif self.first_node.state.position == current_state.position:
+            pass
+        return
 
     def actions(self, state: State) -> list:
         """returns list of possible actions"""
