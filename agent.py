@@ -1,5 +1,6 @@
 import random
 import copy
+import time
 from base import BaseAgent, TurnData, Action
 
 
@@ -24,8 +25,6 @@ class State:
         
         return True
 
-
-
 class Node: 
     def __init__(self, state: State, parent_node, parent_action: Action):
         self.state = state
@@ -42,6 +41,7 @@ class Agent(BaseAgent):
         self.solution_list = []
         self.is_carrying_diamond = False
         self.goal_state = None
+        self.elapsed_time = 0
         print(f"MY NAME: {self.name}")
         print(f"PLAYER COUNT: {self.agent_count}")
         print(f"GRID SIZE: {self.grid_size}")
@@ -61,6 +61,8 @@ class Agent(BaseAgent):
 
         # returning agent action by calling breadth_first_search(turnData) 
         action = self.breadth_first_search(turn_data)
+        with open("agent-map5", "w") as f:
+                f.write(str(self.elapsed_time))
         if action == -1:  # failure
             pass
         else:
@@ -89,6 +91,7 @@ class Agent(BaseAgent):
             explored_set = []
 
             while True:
+                first_time = time.perf_counter()
                 if not frontier:  # frontier is emtpy
                     return -1
                 node = frontier.pop(0)  # chooses the shallowest node in frontier
@@ -105,7 +108,10 @@ class Agent(BaseAgent):
                             self.solution(child)
                             first_action = self.solution_list.pop(len(self.solution_list) - 1)
                             return first_action
-                        frontier.append(child)    
+                        frontier.append(child)  
+                second_time = time.perf_counter()
+                self.elapsed_time += second_time - first_time
+  
         else:  # solution_list is not empty
             # returning an action from solution_list
             return self.solution_list.pop()        
@@ -160,7 +166,7 @@ class Agent(BaseAgent):
         columns = len(state.map_data[0])
         x = state.position[0]
         y = state.position[1]
-
+        
         up_position = x - 1
         if up_position >= 0 :  # up is not boundary
             if state.map_data[up_position][y] != '*':  # there is no wall upside
