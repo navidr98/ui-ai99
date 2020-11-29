@@ -110,7 +110,7 @@ class Agent(BaseAgent):
 
                 if self.goal_test(node):  # found a solution
                     self.solution(node)
-                    first_action = self.solution_list.pop(len(self.solution_list) - 1)
+                    first_action = self.solution_list.pop()
                     return first_action
                     
                 explored_set.append(node.state)
