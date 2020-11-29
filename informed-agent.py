@@ -64,7 +64,6 @@ class Agent(BaseAgent):
         self.solution_list = []
         self.is_carrying_diamond = False
         self.goal_state = None
-        self.elapsed_time = 0
         print(f"MY NAME: {self.name}")
         print(f"PLAYER COUNT: {self.agent_count}")
         print(f"GRID SIZE: {self.grid_size}")
@@ -82,8 +81,6 @@ class Agent(BaseAgent):
             print(''.join(row))
 
         action = self.a_star_search(turn_data)        
-        with open("informed-agent-map5", "w") as f:
-                f.write(str(self.elapsed_time))
         if action == -1:  # failed to find proper action
             return random.choice(list(Action))
         else:
@@ -106,7 +103,6 @@ class Agent(BaseAgent):
             explored_set = []
 
             while True:
-                first_time = time.perf_counter()
                 if not frontier:  # frontier is emtpy
                     return -1
                 node = heapq.heappop(frontier)
@@ -128,8 +124,6 @@ class Agent(BaseAgent):
                         
                     if not child_is_in_frontier and (child.state not in explored_set):
                         heapq.heappush(frontier, child)
-                second_time = time.perf_counter()
-                self.elapsed_time += second_time - first_time
         else:  # solution_list is not empty
             # returning an action from solution_list
             return self.solution_list.pop()
