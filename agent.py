@@ -1,4 +1,5 @@
 import random
+import time
 import copy
 from base import BaseAgent, TurnData, Action
 
@@ -32,6 +33,7 @@ class Node:
         self.parent_node = parent_node
         self.parent_action = parent_action
         self.cost = 0
+        self.first_node = None
         if(parent_node != None):  # check if this Node is start_node or not
             self.cost = parent_node.cost + 1
 
@@ -42,6 +44,7 @@ class Agent(BaseAgent):
         self.solution_list = []
         self.is_carrying_diamond = False
         self.goal_state = None
+        self.is_time_out = False
         print(f"MY NAME: {self.name}")
         print(f"PLAYER COUNT: {self.agent_count}")
         print(f"GRID SIZE: {self.grid_size}")
@@ -62,7 +65,7 @@ class Agent(BaseAgent):
         # returning agent action by calling breadth_first_search(turnData) 
         action = self.breadth_first_search(turn_data)
         if action == -1:  # failure
-            pass
+            return random.choice(list(Action))
         else:
             return action
 
@@ -85,10 +88,12 @@ class Agent(BaseAgent):
             self.find_goal_state(current_state.map_data)
             if current_state == self.goal_state:
                 return 
-            frontier = [Node(state=current_state, parent_node=None, parent_action=None)]
-            explored_set = []
-
+            
+            frontier.append(Node(state=current_state, parent_node=None, parent_action=None))
+            
+            remained_time = self.decision_time_limit  # save current decision_time_limit
             while True:
+                start_measuring_time = time.perf_counter()
                 if not frontier:  # frontier is emtpy
                     return -1
                 node = frontier.pop(0)  # chooses the shallowest node in frontier
@@ -99,16 +104,27 @@ class Agent(BaseAgent):
                     for frontier_node in frontier:
                         if child.state == frontier_node.state:  # check if child.state is in frontier
                             child_is_in_frontier = True
-                    
                     if not child_is_in_frontier and (child.state not in explored_set):
                         if self.goal_test(child):
+                            explored_set = []
+                            frontier = []
                             self.solution(child)
-                            first_action = self.solution_list.pop(len(self.solution_list) - 1)
+                            first_action = self.solution_list.pop()
                             return first_action
-                            frontier.append(child)    
+                        frontier.append(child)  
+                ###### time checking
+                end_measuring_time = time.perf_counter()
+                remained_time -= end_measuring_time - start_measuring_time
+                if remained_time < 0:
+                    self.is_time_out = True
+                ######
         else:  # solution_list is not empty
-            # returning an action from solution_list
-            return self.solution_list.pop(len(self.solution_list) - 1)        
+            if self.is_time_out:
+                self.is_time_out = False
+                self.rebuild_solution(current_state)
+            # returning an action from solution_list    
+            return self.solution_list.pop()        
+                
 
     def find_goal_state(self, current_state_map):
         """
@@ -233,13 +249,32 @@ class Agent(BaseAgent):
 
         return Node(child_node_state, node, action)
 
-    def solution(self, child: Node):
+    def solution(self, child: Node, reconstruct_solution=False, current_state=None):
         while True:
             if child.parent_action != None:
                 self.solution_list.append(child.parent_action)
                 child = child.parent_node
             else:  # reached to first node
+                self.first_node = child
                 return
+
+    def rebuild_solution(self, current_state):
+        print("rebuild solution!")##############################33
+        if self.first_node.state.position[0] - 1 == current_state.position[0]:  # current_state position is upside
+            self.solution_list.append(Action.DOWN)
+        elif self.first_node.state.position[0] + 1 == current_state.position[0]:  # current_state position is downside
+            self.solution_list.append(Action.UP)
+        elif self.first_node.state.position[1] - 1 == current_state.position[1]:  # current_state position is leftside
+            self.solution_list.append(Action.RIGHT)
+        elif self.first_node.state.position[1] +1 == current_state.position[1]:  # current_state position is rightside
+            self.solution_list.append(Action.LEFT)  # current_state position is same as child
+        elif self.first_node.state.position == current_state.position:
+            pass
+        print("after rebuild soulution: ", str(self.solution_list))#####################################
+        return
+          
+
+
 
 
 
