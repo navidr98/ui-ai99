@@ -110,7 +110,7 @@ class Agent(BaseAgent):
 
                 if self.goal_test(node):  # found a solution
                     self.solution(node)
-                    first_action = self.solution_list.pop(len(self.solution_list) - 1)
+                    first_action = self.solution_list.pop()
                     return first_action
                     
                 explored_set.append(node.state)
@@ -127,7 +127,7 @@ class Agent(BaseAgent):
                         heapq.heappush(frontier, child)
         else:  # solution_list is not empty
             # returning an action from solution_list
-            return self.solution_list.pop(len(self.solution_list) - 1)
+            return self.solution_list.pop()
     
     def transform_turnData_to_state(self, turn_data: TurnData) -> State:  # not tested
         """
